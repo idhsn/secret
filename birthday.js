@@ -1079,24 +1079,41 @@ if (reduceMotion) {
 
   /* ── GIFT SCENE: dragging (shared) ── */
   function makeGiftDraggable(el) {
-    let ox = 0, oy = 0, dragging = false, moved = false;
+    let ox = 0, oy = 0, startLeft = 0, startTop = 0, dragging = false, moved = false;
     el.addEventListener('pointerdown', e => {
       if (e.target.closest('#giftSeal')) return;
       e.preventDefault(); dragging = true; moved = false;
+      ox = e.clientX; 
+      oy = e.clientY;
+      
       const r = el.getBoundingClientRect();
-      ox = e.clientX - r.left; oy = e.clientY - r.top;
+      const parentRect = el.parentElement.getBoundingClientRect();
+      startLeft = r.left - parentRect.left;
+      startTop = r.top - parentRect.top;
+      
+      el.style.left = startLeft + 'px';
+      el.style.top = startTop + 'px';
+      
       try { el.setPointerCapture(e.pointerId); } catch (_) { }
       el.classList.add('lifted'); el.style.zIndex = 200;
     });
     el.addEventListener('pointermove', e => {
       if (!dragging) return; moved = true;
-      el.style.left = (e.clientX - ox) + 'px';
-      el.style.top = (e.clientY - oy) + 'px';
+      const dx = e.clientX - ox;
+      const dy = e.clientY - oy;
+      el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
     });
-    const end = () => {
+    const end = (e) => {
       if (!dragging) return; dragging = false;
       el.classList.remove('lifted'); el.style.zIndex = '';
-      if (moved) document.querySelectorAll('.gift-drag-hint').forEach(h => h.classList.add('gone'));
+      if (moved) {
+        const dx = e.clientX - ox;
+        const dy = e.clientY - oy;
+        el.style.transform = '';
+        el.style.left = (startLeft + dx) + 'px';
+        el.style.top = (startTop + dy) + 'px';
+        document.querySelectorAll('.gift-drag-hint').forEach(h => h.classList.add('gone'));
+      }
     };
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
