@@ -1,0 +1,365 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>For You &#x2665;</title>
+  <meta name="description" content="A little gift &mdash; open the letter and hold the flowers." />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Fraunces:opsz,wght@9..144,600;9..144,900&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;overflow:hidden;background:#fff3e9;-webkit-font-smoothing:antialiased;user-select:none}
+
+    /* ======================================================
+       LAYER STACK
+       z1  .bg          warm tree background (always present)
+       z2  .petals      floating petals
+       z4  #scene       bouquet + envelope (cards)
+       z5  .back-btn
+       z6  .grain
+       z10 #wish-field  rose flood + kinetic text (removed after intro)
+       z20 #bloom-in    initial white-gold cover (removed after shrink)
+       z30 #bloom-out   second bloom that wipes to the gift scene
+    ====================================================== */
+
+    /* WARM TREE BG */
+    .bg{position:fixed;inset:0;z-index:1;
+      background:linear-gradient(180deg,#fff3e9 0%,#ffe7d6 46%,#fcd9c4 78%,#f3c4b5 100%)}
+
+    /* PETALS */
+    .petal{position:fixed;z-index:2;pointer-events:none;border-radius:60% 40% 60% 40%;opacity:0;animation:petal-drift linear infinite}
+    @keyframes petal-drift{0%{transform:translateY(110vh) rotate(0deg);opacity:0}5%{opacity:.35}95%{opacity:.2}100%{transform:translateY(-20vh) rotate(720deg);opacity:0}}
+
+    /* DRAGGABLE CARDS */
+    .card{position:absolute;cursor:grab;touch-action:none;will-change:transform;transition:box-shadow .2s ease;z-index:4}
+    .card:active{cursor:grabbing}
+    .card.lifted{box-shadow:0 28px 60px rgba(120,30,50,.28),0 8px 20px rgba(120,30,50,.15);z-index:100!important}
+
+    /* BOUQUET */
+    #bouquet{width:clamp(260px,32vw,400px);filter:drop-shadow(0 18px 36px rgba(100,30,40,.25));background:none}
+    #bouquet img{width:100%;height:auto;display:block;pointer-events:none}
+
+    /* ENVELOPE WRAP */
+    #envelope-wrap{width:clamp(280px,38vw,460px)}
+    .envelope{position:relative;width:100%;cursor:grab}
+    .envelope:active{cursor:grabbing}
+    .env-body{position:relative;width:100%;padding-top:66%;border-radius:4px 4px 10px 10px;background:linear-gradient(160deg,#fff8f2 0%,#fdeee5 100%);box-shadow:0 0 0 1px rgba(200,130,110,.2),0 12px 48px rgba(160,50,60,.22),0 4px 12px rgba(160,50,60,.12);overflow:hidden}
+    .env-flap{position:absolute;top:0;left:0;right:0;height:60%;clip-path:polygon(0 0,50% 62%,100% 0);background:linear-gradient(170deg,#f9ddd5 0%,#f0c4ba 100%);transform-origin:top center;transition:transform .65s cubic-bezier(.4,0,.2,1);z-index:3}
+    .env-flap::after{content:'';position:absolute;inset:0;background:linear-gradient(170deg,rgba(255,255,255,.4) 0%,transparent 60%)}
+    .env-side{position:absolute;bottom:0;width:0;height:0;border-bottom:solid rgba(232,180,165,.6)}
+    .env-side--l{left:0;border-left:50vw solid transparent;border-bottom-width:clamp(80px,10vw,130px)}
+    .env-side--r{right:0;border-right:50vw solid transparent;border-bottom-width:clamp(80px,10vw,130px)}
+    .env-seal{position:absolute;bottom:clamp(-14px,-2vw,-18px);left:50%;transform:translateX(-50%);width:clamp(40px,6vw,54px);height:clamp(40px,6vw,54px);background:radial-gradient(circle at 38% 32%,#e8607a,#c0304e 45%,#8d1535);border-radius:50%;box-shadow:0 3px 12px rgba(140,20,40,.4),0 0 0 2px rgba(255,255,255,.3) inset;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,2.4vw,22px);z-index:4;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,opacity .3s ease;color:#fff}
+    .env-seal:hover{transform:translateX(-50%) scale(1.14);box-shadow:0 6px 20px rgba(140,20,40,.5),0 0 0 2px rgba(255,255,255,.35) inset}
+    .env-hint{position:absolute;bottom:clamp(-38px,-5.5vw,-46px);left:50%;transform:translateX(-50%);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(11px,1.4vw,13px);color:rgba(160,80,90,.65);white-space:nowrap;letter-spacing:.04em;pointer-events:none;transition:opacity .4s ease}
+    .env-hint.hidden{opacity:0}
+    .letter-wrap{position:absolute;left:8%;right:8%;bottom:0;height:0;overflow:hidden;transition:height .7s cubic-bezier(.4,0,.2,1),bottom .7s cubic-bezier(.4,0,.2,1);z-index:2}
+    .letter{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(160deg,#fffdf9 0%,#fff8f0 100%);border-radius:6px 6px 0 0;padding:clamp(18px,3vw,28px) clamp(20px,3.5vw,32px) clamp(14px,2vw,22px);box-shadow:0 -4px 20px rgba(160,60,70,.12)}
+    .letter__greeting{font-family:'Great Vibes',cursive;font-size:clamp(22px,3.5vw,34px);color:#b03050;margin-bottom:10px;line-height:1.2}
+    .letter__body{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(13px,1.7vw,16px);line-height:1.9;color:#6a3040;margin-bottom:12px}
+    .letter__sign{font-family:'Great Vibes',cursive;font-size:clamp(18px,2.8vw,26px);color:#c0304e;text-align:right}
+    .envelope.is-open .env-flap{transform:rotateX(180deg)}
+    .envelope.is-open .letter-wrap{height:115%;bottom:8%}
+    .envelope.is-open .env-seal{transform:translateX(-50%) scale(.85);opacity:.4;pointer-events:none}
+
+    /* DRAG HINTS */
+    .drag-hint{position:absolute;bottom:-26px;left:50%;transform:translateX(-50%);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:rgba(150,70,80,.5);white-space:nowrap;pointer-events:none;letter-spacing:.04em;transition:opacity .6s ease}
+    .drag-hint.gone{opacity:0}
+
+    /* BACK BUTTON */
+    .back-btn{position:fixed;top:20px;left:20px;z-index:5;display:inline-flex;align-items:center;gap:7px;padding:10px 18px 10px 14px;border-radius:999px;font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(130,50,65,.8);background:rgba(255,248,244,.72);border:1px solid rgba(180,100,110,.2);box-shadow:0 4px 16px rgba(160,50,60,.15);backdrop-filter:blur(8px);cursor:pointer;transition:background .2s,box-shadow .2s,transform .2s;text-decoration:none;opacity:0}
+    .back-btn:hover{background:rgba(255,248,244,.92);box-shadow:0 6px 22px rgba(160,50,60,.22);transform:translateY(-1px)}
+
+    /* GRAIN */
+    .grain{position:fixed;inset:0;z-index:6;pointer-events:none;background:url('/textures/grain.png') repeat;background-size:300px;opacity:.04;mix-blend-mode:overlay}
+
+    /* ===================================================
+       WISH FIELD  (Act-3 clone)
+    =================================================== */
+    #wish-field{
+      position:fixed;inset:0;z-index:10;
+      background:radial-gradient(120% 100% at 50% 8%,#d5265f 0%,#d4235c 42%,#a80f43 78%,#6e0a31 100%);
+      color:#fff;overflow:hidden;pointer-events:none;
+      display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(4px,1.2vh,12px);
+    }
+    /* blobs */
+    .wf-blob{position:absolute;border-radius:50%;filter:blur(46px);mix-blend-mode:screen}
+    .wf-blob1{width:58vmax;height:58vmax;left:-18vmax;top:-16vmax;background:radial-gradient(circle,rgba(255,130,160,.9),transparent 62%)}
+    .wf-blob2{width:46vmax;height:46vmax;right:-14vmax;top:22vmax;background:radial-gradient(circle,rgba(255,90,120,.75),transparent 64%)}
+    .wf-blob3{width:52vmax;height:52vmax;left:24vmax;bottom:-22vmax;background:radial-gradient(circle,rgba(180,20,70,.8),transparent 66%)}
+    /* vignette */
+    .wf-vig{position:absolute;inset:0;background:radial-gradient(128% 96% at 50% 44%,transparent 50%,rgba(70,6,28,.5) 100%)}
+    /* cinema bars */
+    .wf-bar{position:absolute;left:0;right:0;height:16vh;background:#12040b;z-index:3;pointer-events:none}
+    .wf-bar-t{top:0}
+    .wf-bar-b{bottom:0}
+    /* text */
+    .wf-eyebrow{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;font-size:clamp(15px,3.6vw,27px);letter-spacing:.08em;color:#ffd7c8;opacity:0;transform:translateY(10px);margin-bottom:clamp(2px,1vh,10px)}
+    .wf-headline{font-family:'Fraunces',Georgia,serif;line-height:.92;text-align:center}
+    .wf-line{display:block}
+    .wf-mask{display:inline-block;overflow:hidden;padding:.14em .06em;margin:-.14em -.06em}
+    .wf-word{display:inline-block;font-weight:900;font-size:clamp(52px,15vw,168px);letter-spacing:-.02em;color:#fff6f1;text-shadow:0 6px 34px rgba(60,4,24,.34),0 2px 3px rgba(90,8,36,.42)}
+    .wf-ch{display:inline-block;will-change:transform}
+    /* gold underline */
+    .wf-uline{width:clamp(150px,40vw,380px);height:auto;margin-top:clamp(4px,1.4vh,14px);color:#ffcf6a;filter:drop-shadow(0 2px 8px rgba(255,180,90,.5))}
+    .wf-sub{margin-top:clamp(12px,2.4vh,26px);font-family:'Cormorant Garamond',serif;font-weight:500;font-style:italic;font-size:clamp(14px,3.4vw,24px);letter-spacing:.05em;color:#ffdfd2;opacity:0;transform:translateY(10px)}
+
+    /* ===================================================
+       BLOOM CIRCLES (entry + handoff)
+    =================================================== */
+    .bloom-circle{
+      position:fixed;left:50%;top:50%;
+      width:60px;height:60px;margin:-30px 0 0 -30px;
+      border-radius:50%;
+      background:radial-gradient(circle,#fff 0%,#fff2d6 30%,rgba(255,214,150,.9) 55%,rgba(255,190,150,0) 74%);
+      z-index:20;pointer-events:none;
+      transform-origin:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="grain"></div>
+
+  <!-- floating petals -->
+  <div class="petal" style="left:8%;background:#ffb8c6;width:14px;height:14px;animation-duration:12s;animation-delay:-2s"></div>
+  <div class="petal" style="left:22%;background:#ffc8d8;width:10px;height:10px;animation-duration:9s;animation-delay:-5s"></div>
+  <div class="petal" style="left:45%;background:#ffccd5;width:16px;height:16px;animation-duration:14s;animation-delay:-1s"></div>
+  <div class="petal" style="left:63%;background:#ffb0be;width:12px;height:12px;animation-duration:11s;animation-delay:-7s"></div>
+  <div class="petal" style="left:78%;background:#ffd0da;width:9px;height:9px;animation-duration:8s;animation-delay:-3s"></div>
+  <div class="petal" style="left:91%;background:#ffbcc8;width:13px;height:13px;animation-duration:13s;animation-delay:-9s"></div>
+
+  <!-- back button (shown after intro) -->
+  <a href="./index.html" class="back-btn" id="backBtn">
+    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg>
+    Back
+  </a>
+
+  <!-- BOUQUET (hidden until intro ends) -->
+  <div class="card" id="bouquet" style="left:56%;top:8%;opacity:0">
+    <img src="/bouquet.jpg" alt="A beautiful bouquet of pink peonies, roses and wildflowers" draggable="false"/>
+    <p class="drag-hint" id="bouquetHint">drag me &#x2736;</p>
+  </div>
+
+  <!-- ENVELOPE (hidden until intro ends) -->
+  <div class="card" id="envelope-wrap" style="left:7%;top:16%;opacity:0">
+    <div class="envelope" id="envelope">
+      <div class="env-body">
+        <div class="env-flap"></div>
+        <div class="env-side env-side--l"></div>
+        <div class="env-side env-side--r"></div>
+        <div class="letter-wrap">
+          <div class="letter">
+            <p class="letter__greeting">Happy Birthday, my love &#x2665;</p>
+            <p class="letter__body">
+              I wrote this a hundred times in my head before I finally put it down.<br><br>
+              You are one of those rare people who makes the world feel softer just by being in it.
+              The way you laugh, the way you care, the way you exist &mdash; it is my favourite thing.<br><br>
+              I hope this year is as beautiful as you are. Full of warmth, of moments that take your
+              breath away, of flowers that never quite wilt.<br><br>
+              Thank you for letting me be part of your story. &#x2728;
+            </p>
+            <p class="letter__sign">with all my love &#x1F338;</p>
+          </div>
+        </div>
+      </div>
+      <div class="env-seal" id="seal" role="button" aria-label="Open the letter" title="Click to open">&#x2665;</div>
+      <p class="env-hint" id="envHint">tap the seal to open &#x2665;</p>
+    </div>
+    <p class="drag-hint" id="envDragHint">drag me &#x2736;</p>
+  </div>
+
+  <!-- WISH FIELD (kinetic text, Act-3 clone) -->
+  <div id="wish-field">
+    <div class="wf-blob wf-blob1"></div>
+    <div class="wf-blob wf-blob2"></div>
+    <div class="wf-blob wf-blob3"></div>
+    <div class="wf-vig"></div>
+    <div class="wf-bar wf-bar-t" id="barT"></div>
+    <div class="wf-bar wf-bar-b" id="barB"></div>
+
+    <p class="wf-eyebrow" id="wfEye">make a wish&hellip;</p>
+    <div class="wf-headline">
+      <span class="wf-line"><span class="wf-mask"><span class="wf-word" id="wfW1">Happy</span></span></span>
+      <span class="wf-line"><span class="wf-mask"><span class="wf-word" id="wfW2">Birthday</span></span></span>
+    </div>
+    <svg class="wf-uline" id="wfUline" viewBox="0 0 300 26" fill="none" aria-hidden="true">
+      <path id="wfUpath" d="M8 16C56 7 132 4 178 6c30 1 78 5 114 12-40 3-108 4-176 3"
+            stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p class="wf-sub" id="wfSub">to someone worth celebrating</p>
+  </div>
+
+  <!-- BLOOM CIRCLES -->
+  <div class="bloom-circle" id="bloomIn"  style="transform:scale(60);opacity:1"></div>
+  <div class="bloom-circle" id="bloomOut" style="transform:scale(0.001);opacity:0"></div>
+
+  <!-- GSAP from same CDN the main film uses -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script>
+    /* ── split words into per-glyph spans (mirrors birthday.js) ── */
+    function splitWord(el) {
+      const chars = [...el.textContent];
+      el.textContent = '';
+      return chars.map(c => {
+        const s = document.createElement('span');
+        s.className = 'wf-ch';
+        s.textContent = c;
+        el.appendChild(s);
+        return s;
+      });
+    }
+
+    const w1chars = splitWord(document.getElementById('wfW1'));
+    const w2chars = splitWord(document.getElementById('wfW2'));
+
+    /* prep: all word-chars start hinged down */
+    gsap.set([...w1chars, ...w2chars], {
+      transformPerspective: 620, transformOrigin: '50% 100%',
+      yPercent: 135, rotationX: -82
+    });
+
+    /* prep: underline hidden */
+    const upath = document.getElementById('wfUpath');
+    const uLen  = upath.getTotalLength();
+    upath.style.strokeDasharray  = uLen;
+    upath.style.strokeDashoffset = uLen;
+
+    /* cinema bars start closed (off-screen) */
+    gsap.set('#barT', { yPercent: -100 });
+    gsap.set('#barB', { yPercent:  100 });
+
+    /* ───────────────────────────────────────────────────
+       MASTER TIMELINE
+       0.00  bloomIn shrinks — rose field revealed
+       0.35  cinema bars slide in
+       0.55  eyebrow fades up
+       0.75  "Happy"   hinges up
+       1.15  "Birthday" hinges up
+       1.65  underline draws
+       1.95  sub line fades up
+       2.80  bars slide out
+       3.00  bloomOut expands → covers screen
+       3.55  wish-field removed, cards revealed
+       3.70  bloomOut shrinks away → gift scene
+       4.20  back button fades in
+    ─────────────────────────────────────────────────── */
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    /* 1. Shrink the entry bloom to reveal the rose field */
+    tl.to('#bloomIn', { scale: 0, duration: 0.45, ease: 'power2.out' }, 0.02)
+      .set('#bloomIn', { display: 'none' }, 0.5);
+
+    /* 2. Cinema bars in */
+    tl.to('#barT', { yPercent: 0, duration: 0.5, ease: 'power2.out' }, 0.35)
+      .to('#barB', { yPercent: 0, duration: 0.5, ease: 'power2.out' }, 0.35);
+
+    /* 3. Eyebrow */
+    tl.to('#wfEye', { opacity: 1, y: 0, duration: 0.45 }, 0.55);
+
+    /* 4. "Happy" — each character hinges up */
+    tl.to(w1chars, { yPercent: 0, rotationX: 0, duration: 0.55, stagger: 0.033 }, 0.75);
+
+    /* 5. "Birthday" */
+    tl.to(w2chars, { yPercent: 0, rotationX: 0, duration: 0.55, stagger: 0.033 }, 1.15);
+
+    /* 6. Underline draws */
+    tl.to(upath, { strokeDashoffset: 0, duration: 0.45, ease: 'power2.inOut' }, 1.65);
+
+    /* 7. Sub line */
+    tl.to('#wfSub', { opacity: 1, y: 0, duration: 0.45 }, 1.95);
+
+    /* 8. Cinema bars out */
+    tl.to('#barT', { yPercent: -100, duration: 0.45, ease: 'power2.in' }, 2.80)
+      .to('#barB', { yPercent:  100, duration: 0.45, ease: 'power2.in' }, 2.80);
+
+    /* 9. bloomOut expands — covers screen */
+    const reach = Math.hypot(window.innerWidth / 2, window.innerHeight / 2);
+    const coverScale = (reach * 1.3) / 30;
+    tl.to('#bloomOut', { scale: coverScale, opacity: 1, duration: 0.52, ease: 'power2.in' }, 3.00);
+
+    /* 10. While covered: remove rose field, reveal cards */
+    tl.add(() => {
+      document.getElementById('wish-field').remove();
+      gsap.set(['#bouquet', '#envelope-wrap'], { opacity: 1 });
+    }, 3.54);
+
+    /* 11. bloomOut shrinks to nothing — gift scene revealed */
+    tl.to('#bloomOut', { scale: 0, opacity: 1, duration: 0.62, ease: 'power2.out' }, 3.56);
+
+    /* 12. Cards spring in */
+    tl.fromTo('#bouquet',
+      { y: 40, scale: 0.85 },
+      { y: 0, scale: 1, duration: 0.7, ease: 'back.out(1.5)' }, 3.58);
+    tl.fromTo('#envelope-wrap',
+      { y: -40, scale: 0.88, rotation: -4 },
+      { y: 0, scale: 1, rotation: -2, duration: 0.75, ease: 'back.out(1.4)' }, 3.65);
+
+    /* 13. Back button */
+    tl.to('#backBtn', { opacity: 1, duration: 0.5 }, 4.10);
+
+    /* 14. Drag hints fade after 5s of gift scene */
+    tl.add(() => {
+      setTimeout(() => {
+        document.querySelectorAll('.drag-hint').forEach(h => h.classList.add('gone'));
+      }, 5000);
+    }, 3.60);
+
+    /* ── Draggable ── */
+    function makeDraggable(el) {
+      let ox=0, oy=0, dragging=false, moved=false;
+      el.addEventListener('pointerdown', e => {
+        if (e.target.closest('#seal')) return;
+        e.preventDefault();
+        dragging=true; moved=false;
+        const r = el.getBoundingClientRect();
+        ox = e.clientX - r.left; oy = e.clientY - r.top;
+        try { el.setPointerCapture(e.pointerId); } catch(_){}
+        el.classList.add('lifted'); el.style.zIndex = 200;
+      });
+      el.addEventListener('pointermove', e => {
+        if (!dragging) return; moved=true;
+        el.style.left = (e.clientX - ox) + 'px';
+        el.style.top  = (e.clientY - oy) + 'px';
+      });
+      const end = () => {
+        if (!dragging) return; dragging=false;
+        el.classList.remove('lifted'); el.style.zIndex='';
+        if (moved) document.querySelectorAll('.drag-hint').forEach(h=>h.classList.add('gone'));
+      };
+      el.addEventListener('pointerup', end);
+      el.addEventListener('pointercancel', end);
+    }
+    makeDraggable(document.getElementById('bouquet'));
+    makeDraggable(document.getElementById('envelope-wrap'));
+
+    /* ── Envelope open / close ── */
+    const seal = document.getElementById('seal');
+    let isOpen = false;
+    seal.addEventListener('click', e => {
+      e.stopPropagation(); isOpen = !isOpen;
+      document.getElementById('envelope').classList.toggle('is-open', isOpen);
+      document.getElementById('envHint').classList.add('hidden');
+    });
+
+    /* ── Continuous petal spawner ── */
+    const cols = ['#ffb8c6','#ffc8d8','#ffd5df','#ffb0be','#ffd0da','#f9c4d0'];
+    function spawnPetal() {
+      const p = document.createElement('div'); p.className = 'petal';
+      p.style.left = Math.random()*100+'vw';
+      p.style.background = cols[(Math.random()*cols.length)|0];
+      const s = 8 + Math.random()*14;
+      p.style.width = p.style.height = s+'px';
+      p.style.animationDuration = (7+Math.random()*10)+'s';
+      p.style.animationDelay = '0s';
+      p.style.borderRadius = (50+Math.random()*20)+'% '+(40+Math.random()*20)+'% '+(50+Math.random()*20)+'% '+(40+Math.random()*20)+'%';
+      document.body.appendChild(p);
+      p.addEventListener('animationend', () => p.remove());
+    }
+    setInterval(spawnPetal, 1800);
+  </script>
+</body>
+</html>
