@@ -1151,14 +1151,13 @@ if (reduceMotion) {
   function spawnGiftPetal() {
     if (giftScene.style.display === 'none') return;
     const p = document.createElement('div');
-    p.style.cssText = 'position:absolute;border-radius:60% 40% 60% 40%;opacity:0;animation:none;pointer-events:none;';
+    p.style.cssText = 'position:absolute;opacity:0;animation:none;pointer-events:none;';
     const s = 8 + Math.random() * 14;
     const startX = Math.random() * 100;
     p.style.left = startX + 'vw';
     p.style.bottom = '-20px';
     p.style.width = p.style.height = s + 'px';
-    p.style.background = petalCols[(Math.random() * petalCols.length) | 0];
-    p.style.borderRadius = `${50 + Math.random() * 20}% ${40 + Math.random() * 20}% ${50 + Math.random() * 20}% ${40 + Math.random() * 20}%`;
+    p.innerHTML = miniHeartSVG(petalCols[(Math.random() * petalCols.length) | 0]);
     $('giftPetals').appendChild(p);
     const dur = 7 + Math.random() * 10;
     gsap.fromTo(p,
@@ -1291,8 +1290,7 @@ if (reduceMotion) {
         const s = 8 + Math.random() * 16;
         p.style.cssText = 'position:absolute;pointer-events:none;';
         p.style.width = p.style.height = s + 'px';
-        p.style.borderRadius = `${50 + Math.random() * 20}% ${40 + Math.random() * 20}% ${50 + Math.random() * 20}% ${40 + Math.random() * 20}%`;
-        p.style.background = celebCols[(Math.random() * celebCols.length) | 0];
+        p.innerHTML = miniHeartSVG(celebCols[(Math.random() * celebCols.length) | 0]);
         p.style.left = (30 + Math.random() * 40) + '%';
         p.style.top = '50%';
         $('askPetals').appendChild(p);
@@ -1317,8 +1315,7 @@ if (reduceMotion) {
       const s = 8 + Math.random() * 14;
       p.style.cssText = 'position:absolute;pointer-events:none;';
       p.style.width = p.style.height = s + 'px';
-      p.style.borderRadius = `${50 + Math.random() * 20}% ${40 + Math.random() * 20}% ${50 + Math.random() * 20}% ${40 + Math.random() * 20}%`;
-      p.style.background = petalCols[(Math.random() * petalCols.length) | 0];
+      p.innerHTML = miniHeartSVG(petalCols[(Math.random() * petalCols.length) | 0]);
       p.style.left = Math.random() * 100 + 'vw';
       p.style.bottom = '-20px';
       $('askPetals').appendChild(p);
